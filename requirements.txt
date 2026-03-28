@@ -4,9 +4,10 @@ langchain==0.2.14
 langchain-community==0.2.12
 langchain-core==0.2.33
 langchain-groq==0.1.6
-langchain-chroma
 
 chromadb==0.5.5
+
+sentence-transformers==2.7.0
 
 beautifulsoup4==4.12.3
 
