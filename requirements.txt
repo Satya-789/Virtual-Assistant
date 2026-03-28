@@ -12,6 +12,5 @@ sentence-transformers==2.7.0
 unstructured
 
 beautifulsoup4==4.12.3
-lxml==5.2.2
 
 python-dotenv==1.0.1
