@@ -33,13 +33,13 @@ if process_btn:
         st.session_state.processed = True
         status.success("✅ Ready!")
 
-# Query input
+# Question input
 query = st.text_input("Ask your question:")
 
 # Answer
 if query:
     if not st.session_state.processed:
-        st.warning("⚠️ Please process URLs first")
+        st.warning("⚠️ Process URLs first")
     else:
         with st.spinner("Thinking..."):
             try:
