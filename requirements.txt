@@ -4,17 +4,14 @@ langchain==0.2.14
 langchain-community==0.2.12
 langchain-core==0.2.33
 langchain-groq==0.1.6
-langchain-huggingface==0.0.3
 
 chromadb==0.5.5
 
 sentence-transformers==2.7.0
-transformers==4.41.2
-torch==2.2.2
 
-unstructured==0.14.9
+unstructured
+
 beautifulsoup4==4.12.3
 lxml==5.2.2
 
 python-dotenv==1.0.1
-tiktoken==0.7.0
