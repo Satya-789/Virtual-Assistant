@@ -7,10 +7,6 @@ langchain-groq==0.1.6
 
 chromadb==0.5.5
 
-sentence-transformers==2.7.0
-
-unstructured
-
 beautifulsoup4==4.12.3
 
 python-dotenv==1.0.1
