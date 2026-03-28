@@ -4,16 +4,17 @@ from pathlib import Path
 import os
 import shutil
 
-# ✅ Fix USER_AGENT warning
+# Fix USER_AGENT warning
 os.environ["USER_AGENT"] = "streamlit-app"
 
-# Load env variables
+# Load env
 load_dotenv()
 
 from langchain.chains import RetrievalQAWithSourcesChain
 from langchain_community.document_loaders import WebBaseLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_groq import ChatGroq
 
 # Constants
@@ -22,25 +23,30 @@ VECTORSTORE_DIR = Path(__file__).parent / "resources/vectorstore"
 COLLECTION_NAME = "assistant"
 
 
-# ✅ LLM factory
+# ✅ LLM
 def get_llm():
-    groq_api_key = os.getenv("GROQ_API_KEY")
+    api_key = os.getenv("GROQ_API_KEY")
 
-    if not groq_api_key:
-        raise ValueError("GROQ_API_KEY is not set")
+    if not api_key:
+        raise ValueError("GROQ_API_KEY not set")
 
     return ChatGroq(
         model_name="llama-3.3-70b-versatile",
-        groq_api_key=groq_api_key,
+        groq_api_key=api_key,
         temperature=0.5,
         max_tokens=500
     )
 
 
-# ✅ Vector DB
+# ✅ Vector Store with embeddings (IMPORTANT FIX)
 def get_vector_store():
+    embeddings = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
+    )
+
     return Chroma(
         collection_name=COLLECTION_NAME,
+        embedding_function=embeddings,
         persist_directory=str(VECTORSTORE_DIR)
     )
 
@@ -49,7 +55,7 @@ def get_vector_store():
 def process_urls(urls):
     yield "Initializing... ✅"
 
-    # ✅ Reset DB safely
+    # Reset DB
     if VECTORSTORE_DIR.exists():
         shutil.rmtree(VECTORSTORE_DIR)
 
@@ -66,7 +72,7 @@ def process_urls(urls):
     )
     docs = splitter.split_documents(data)
 
-    yield "Storing in vector DB... ✅"
+    yield "Storing in DB... ✅"
     ids = [str(uuid4()) for _ in docs]
     vector_store.add_documents(docs, ids=ids)
 
@@ -89,17 +95,3 @@ def generate_answer(query):
     )
 
     return result.get("answer", ""), result.get("sources", "")
-
-
-# ✅ Test run
-if __name__ == "__main__":
-    urls = [
-        "https://www.cnbc.com/2024/12/21/how-the-federal-reserves-rate-policy-affects-mortgages.html"
-    ]
-
-    for step in process_urls(urls):
-        print(step)
-
-    answer, sources = generate_answer("What is mortgage rate?")
-    print("\nAnswer:", answer)
-    print("\nSources:", sources)
