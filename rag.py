@@ -8,7 +8,6 @@ from langchain_community.document_loaders import WebBaseLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 from langchain_groq import ChatGroq
-from langchain_community.embeddings import HuggingFaceEmbeddings
 
 # Load env
 load_dotenv()
@@ -19,30 +18,25 @@ VECTORSTORE_DIR = Path(__file__).parent / "resources/vectorstore"
 COLLECTION_NAME = "assistant"
 
 
-# ✅ LLM factory
+# ✅ LLM
 def get_llm():
-    groq_api_key = os.getenv("GROQ_API_KEY")
+    api_key = os.getenv("GROQ_API_KEY")
 
-    if not groq_api_key:
-        raise ValueError("GROQ_API_KEY is not set")
+    if not api_key:
+        raise ValueError("GROQ_API_KEY not set")
 
     return ChatGroq(
         model_name="llama-3.3-70b-versatile",
-        groq_api_key=groq_api_key,
+        groq_api_key=api_key,
         temperature=0.5,
         max_tokens=500
     )
 
 
-# ✅ Vector DB
+# ✅ Vector DB (NO embeddings → lightweight)
 def get_vector_store():
-    embeddings = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2"
-    )
-
     return Chroma(
         collection_name=COLLECTION_NAME,
-        embedding_function=embeddings,
         persist_directory=str(VECTORSTORE_DIR)
     )
 
