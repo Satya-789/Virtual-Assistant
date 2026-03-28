@@ -33,7 +33,7 @@ if process_btn:
         st.session_state.processed = True
         status.success("✅ Ready!")
 
-# Question input
+# Query
 query = st.text_input("Ask your question:")
 
 # Answer
