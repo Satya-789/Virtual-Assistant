@@ -4,112 +4,86 @@ from pathlib import Path
 import os
 
 from langchain.chains import RetrievalQAWithSourcesChain
-from langchain_community.document_loaders import UnstructuredURLLoader
+from langchain_community.document_loaders import WebBaseLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 from langchain_groq import ChatGroq
-from langchain_huggingface.embeddings import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 
-# ✅ Load env variables FIRST
+# Load env
 load_dotenv()
 
 # Constants
 CHUNK_SIZE = 1000
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 VECTORSTORE_DIR = Path(__file__).parent / "resources/vectorstore"
-COLLECTION_NAME = "real_estate"
+COLLECTION_NAME = "assistant"
 
 
-# ✅ LLM factory (IMPORTANT)
+# ✅ LLM factory
 def get_llm():
     groq_api_key = os.getenv("GROQ_API_KEY")
 
     if not groq_api_key:
-        raise ValueError("GROQ_API_KEY is not set in environment variables.")
+        raise ValueError("GROQ_API_KEY is not set")
 
     return ChatGroq(
         model_name="llama-3.3-70b-versatile",
         groq_api_key=groq_api_key,
-        temperature=0.7,
+        temperature=0.5,
         max_tokens=500
     )
 
 
-# ✅ Vector DB factory
+# ✅ Vector DB
 def get_vector_store():
-    ef = HuggingFaceEmbeddings(
-        model_name=EMBEDDING_MODEL,
-        model_kwargs={"trust_remote_code": True}
+    embeddings = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
 
     return Chroma(
         collection_name=COLLECTION_NAME,
-        embedding_function=ef,
+        embedding_function=embeddings,
         persist_directory=str(VECTORSTORE_DIR)
     )
 
 
-# ✅ Process URLs → store in vector DB
+# ✅ Process URLs
 def process_urls(urls):
-    yield "Initializing components...✅"
+    yield "Initializing...✅"
 
     vector_store = get_vector_store()
 
-    yield "Resetting vector store...✅"
+    yield "Resetting DB...✅"
     vector_store.reset_collection()
 
-    yield "Loading data...✅"
-    loader = UnstructuredURLLoader(urls=urls)
+    yield "Loading URLs...✅"
+    loader = WebBaseLoader(urls)
     data = loader.load()
 
     yield "Splitting text...✅"
     splitter = RecursiveCharacterTextSplitter(
-        separators=["\n\n", "\n", ".", " "],
-        chunk_size=CHUNK_SIZE
+        chunk_size=CHUNK_SIZE,
+        chunk_overlap=100
     )
     docs = splitter.split_documents(data)
 
-    yield "Adding to vector DB...✅"
-    uuids = [str(uuid4()) for _ in docs]
-    vector_store.add_documents(docs, ids=uuids)
+    yield "Storing in DB...✅"
+    ids = [str(uuid4()) for _ in docs]
+    vector_store.add_documents(docs, ids=ids)
 
     yield "Done...✅"
 
 
-# ✅ Generate answer
+# ✅ Generate Answer
 def generate_answer(query):
     vector_store = get_vector_store()
     llm = get_llm()
-
-    if not vector_store:
-        raise RuntimeError("Vector DB not initialized")
 
     chain = RetrievalQAWithSourcesChain.from_llm(
         llm=llm,
         retriever=vector_store.as_retriever()
     )
 
-    result = chain.invoke(
-        {"question": query},
-        return_only_outputs=True
-    )
+    result = chain.invoke({"question": query})
 
     return result.get("answer", ""), result.get("sources", "")
-
-
-# ✅ Run example
-if __name__ == "__main__":
-    urls = [
-        "https://www.cnbc.com/2024/12/21/how-the-federal-reserves-rate-policy-affects-mortgages.html",
-        "https://www.cnbc.com/2024/12/20/why-mortgage-rates-jumped-despite-fed-interest-rate-cut.html"
-    ]
-
-    for step in process_urls(urls):
-        print(step)
-
-    answer, sources = generate_answer(
-        "Tell me what was the 30 year fixed mortgage rate along with the date?"
-    )
-
-    print("\nAnswer:", answer)
-    print("\nSources:", sources)
